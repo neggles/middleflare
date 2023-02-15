@@ -1,65 +1,138 @@
 package middleflare
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"net/http"
-	"text/template"
+	"net/netip"
+	"strings"
+
+	"github.com/neggles/middleflare/cfaddrs"
+)
+
+const (
+	XRealIP         = "X-Real-IP"
+	XForwardedFor   = "X-Forwarded-For"
+	XForwardedProto = "X-Forwarded-Proto"
+	XForwardedHost  = "X-Forwarded-Host"
+	XTrustedProxy   = "X-Trusted-Proxy"
+	CFConnectingIP  = "CF-Connecting-IP"
+	CFVisitor       = "CF-Visitor"
 )
 
 // Config the plugin configuration.
 type Config struct {
-	Headers map[string]string `json:"headers,omitempty"`
+	TrustedProxies []string `json:"trustedProxies,omitempty"`
+	IncludeDefault bool     `json:"includeDefault,omitempty"`
+}
+
+type CheckResult struct {
+	IsValid   bool
+	IsTrusted bool
+	ProxyAddr netip.Addr
 }
 
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		Headers: make(map[string]string),
+		TrustedProxies: []string{},
+		IncludeDefault: true,
 	}
 }
 
-// IPHeaderWriter a IPHeaderWriter plugin.
-type IPHeaderWriter struct {
-	next     http.Handler
-	headers  map[string]string
-	name     string
-	template *template.Template
+type CloudflareHeaders struct {
 }
 
-// New created a new IPHeaderWriter plugin.
+// CFHeaderWriter is a plugin that maps CF-Connecting-IP to X-Real-IP and X-Forwarded-For.
+type CFHeaderWriter struct {
+	next          http.Handler
+	name          string
+	trustPrefixes []netip.Prefix
+}
+
+// New created a new CFHeaderWriter plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	if len(config.Headers) == 0 {
-		return nil, fmt.Errorf("headers cannot be empty")
+	if config == nil {
+		config = CreateConfig()
 	}
 
-	return &IPHeaderWriter{
-		headers:  config.Headers,
-		next:     next,
-		name:     name,
-		template: template.New("middleflare").Delims("[[", "]]"),
+	var trustPrefixes []netip.Prefix
+
+	// If IncludeDefault is true, then we add the default fallback addresses.
+	if config.IncludeDefault {
+		trustPrefixes = cfaddrs.FallbackAddresses()
+	}
+
+	// If TrustedProxies is not empty, then we add the user defined addresses.
+	if len(config.TrustedProxies) > 0 {
+		trustPrefixes = append(trustPrefixes, cfaddrs.ParsePrefixes(config.TrustedProxies)...)
+	}
+
+	// If we have no addresses to trust, then we return an error.
+	return &CFHeaderWriter{
+		next:          next,
+		name:          name,
+		trustPrefixes: trustPrefixes,
 	}, nil
 }
 
-func (a *IPHeaderWriter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	for key, value := range a.headers {
-		tmpl, err := a.template.Parse(value)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
+func (writer *CFHeaderWriter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// Check if the request is coming from a trusted proxy.
+	checkResult := writer.checkSourceAddr(req.RemoteAddr)
 
-		writer := &bytes.Buffer{}
-
-		err = tmpl.Execute(writer, req)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		req.Header.Set(key, writer.String())
+	// If the remote address is invalid, then we return an error.
+	if !checkResult.IsValid {
+		http.Error(rw, "Invalid remote address", http.StatusInternalServerError)
+		return
 	}
 
-	a.next.ServeHTTP(rw, req)
+	// Set headers if the request is coming from a trusted proxy.
+	if checkResult.IsTrusted {
+		// Set X-Trusted-Proxy header if we have a valid proxy address.
+		if checkResult.ProxyAddr.IsValid() {
+			req.Header.Set(XTrustedProxy, checkResult.ProxyAddr.String())
+		}
+
+		// Set X-Real-IP and X-Forwarded-For headers if the CF-Connecting-IP header is set.
+		if req.Header.Get(CFConnectingIP) != "" {
+			req.Header.Set(XRealIP, req.Header.Get(CFConnectingIP))
+			req.Header.Set(XForwardedFor, req.Header.Get(CFConnectingIP))
+		}
+	}
+
+	// Pass the request to the next middleware.
+	writer.next.ServeHTTP(rw, req)
+}
+
+func (writer *CFHeaderWriter) checkSourceAddr(remoteAddr string) *CheckResult {
+	// Split the remote address into the IP and port, and then take the IP.
+	strIp := strings.Split(remoteAddr, ":")[0]
+
+	// Parse the IP address.
+	addr, err := netip.ParseAddr(strIp)
+	if err != nil {
+		return &CheckResult{
+			IsValid:   false,
+			IsTrusted: false,
+		}
+	}
+
+	// Check if the address is in the trusted proxy list.
+	if len(writer.trustPrefixes) > 0 {
+		for _, network := range writer.trustPrefixes {
+			if network.Contains(addr) {
+				return &CheckResult{
+					IsValid:   true,
+					IsTrusted: true,
+					ProxyAddr: addr,
+				}
+			}
+		}
+	}
+
+	// If we get here, then the remote address is not trusted, or we trust no proxies.
+	return &CheckResult{
+		IsValid:   true,
+		IsTrusted: false,
+		ProxyAddr: addr,
+	}
 }
