@@ -1,3 +1,6 @@
+// Package cfaddrs provides a list of Cloudflare's IP addresses,
+// a function to check if an IP address is in a list of netip.Prefix,
+// and a function to parse a list of CIDR strings into a list of netip.Prefix.
 package cfaddrs // import "github.com/neggles/middleflare/cfaddrs"
 
 import (

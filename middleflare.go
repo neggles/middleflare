@@ -1,3 +1,4 @@
+// Package middleflare is a Traefik plugin that maps Cloudflare headers to standard headers.
 package middleflare // import "github.com/neggles/middleflare"
 
 import (
@@ -9,7 +10,8 @@ import (
 	"github.com/neggles/middleflare/cfaddrs"
 )
 
-const ( // Header names.
+// Header name constants.
+const (
 	XRealIP         = "X-Real-IP"
 	XForwardedFor   = "X-Forwarded-For"
 	XForwardedProto = "X-Forwarded-Proto"
