@@ -105,10 +105,10 @@ func (writer *CFHeaderWriter) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 
 func (writer *CFHeaderWriter) checkSourceAddr(remoteAddr string) *CheckResult {
 	// Split the remote address into the IP and port, and then take the IP.
-	strIp := strings.Split(remoteAddr, ":")[0]
+	strIP := strings.Split(remoteAddr, ":")[0]
 
 	// Parse the IP address.
-	addr, err := netip.ParseAddr(strIp)
+	addr, err := netip.ParseAddr(strIP)
 	if err != nil {
 		return &CheckResult{
 			IsValid:   false,

@@ -1,4 +1,4 @@
-package cfaddrs
+package cfaddrs // import "github.com/neggles/middleflare/cfaddrs"
 
 import (
 	"log"
