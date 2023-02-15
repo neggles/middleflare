@@ -6,7 +6,7 @@ import (
 
 // CloudflareIPv4 returns a list of IPv4 prefixes that are used by Cloudflare.
 func CloudflareIPv4() []netip.Prefix {
-	var fallbackIPv4 = [...]string{
+	fallbackIPv4 := [...]string{
 		"127.0.0.1/32", // include localhost for testing
 		"10.16.0.0/20",
 		"172.16.0.0/12",
@@ -32,7 +32,7 @@ func CloudflareIPv4() []netip.Prefix {
 
 // CloudflareIPv6 returns a list of IPv6 prefixes that are used by Cloudflare.
 func CloudflareIPv6() []netip.Prefix {
-	var fallbackIPv6 = [...]string{
+	fallbackIPv6 := [...]string{
 		"2400:cb00::/32",
 		"2606:4700::/32",
 		"2803:f800::/32",
