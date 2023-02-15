@@ -2,11 +2,13 @@ displayName: CloudFlare Proxy Plugin
 type: middleware
 iconPath: .assets/icon.png
 
-import: github.com/neggles/traefik-cloudflare
+import: github.com/neggles/middleflare
 
 summary: 'Middleware to ease use of CloudFlare proxying with Traefik in Kubernetes'
 
 testData:
   Headers:
-    X-Demo: test
-    X-URL: '{{URL}}'
+    CF-Connecting-IP: "1.2.3.4"
+    CF-Visitor: '{"scheme":"https"}'
+    X-Fowarded-For: "1.2.3.4 4.3.2.1 8.8.8.8 7.7.7.7"
+    X-Forwarded-Proto: "https"

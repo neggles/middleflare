@@ -1,4 +1,4 @@
-name: Traefik Plugin Test
+name: TraefikTest
 
 on:
   push:
