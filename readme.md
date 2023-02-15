@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/neggles/middleflare/workflows/TraefikTest/badge.svg?branch=master)](https://github.com/neggles/middleflare/actions)
+[![Build Status](https://github.com/neggles/middleflare/actions/workflows/main.yml/badge.svg)](https://github.com/neggles/middleflare/actions/workflows/main.yml)
 
 # middleflare
 
