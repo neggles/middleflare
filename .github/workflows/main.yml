@@ -1,9 +1,14 @@
-name: Main
+name: Traefik Plugin Test
 
 on:
   push:
     branches:
-      - master
+      - main
+  release:
+    types:
+      - created
+      - edited
+      - prereleased
   pull_request:
 
 jobs:
