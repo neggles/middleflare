@@ -1,3 +1,3 @@
 module github.com/neggles/middleflare
 
-go 1.18
+go 1.19
