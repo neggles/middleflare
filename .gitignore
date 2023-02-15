@@ -114,6 +114,10 @@ $RECYCLE.BIN/
 # Go workspace file
 go.work
 
+# Go workspace dir
+/go/
+
 ### Locals ###
 /misc/
 /temp/
+
