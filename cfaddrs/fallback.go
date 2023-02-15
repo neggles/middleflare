@@ -4,8 +4,9 @@ import (
 	"net/netip"
 )
 
-func FallbackIPv4() []netip.Prefix {
-	var fallbackIPv4 = [...]string{ // go:embed fallback.txt
+// CloudflareIPv4 returns a list of IPv4 prefixes that are used by Cloudflare.
+func CloudflareIPv4() []netip.Prefix {
+	var fallbackIPv4 = [...]string{
 		"127.0.0.1/32", // include localhost for testing
 		"10.16.0.0/20",
 		"172.16.0.0/12",
@@ -29,7 +30,8 @@ func FallbackIPv4() []netip.Prefix {
 	return ParsePrefixes(fallbackIPv4[:])
 }
 
-func FallbackIPv6() []netip.Prefix {
+// CloudflareIPv6 returns a list of IPv6 prefixes that are used by Cloudflare.
+func CloudflareIPv6() []netip.Prefix {
 	var fallbackIPv6 = [...]string{
 		"2400:cb00::/32",
 		"2606:4700::/32",
@@ -42,6 +44,7 @@ func FallbackIPv6() []netip.Prefix {
 	return ParsePrefixes(fallbackIPv6[:])
 }
 
-func FallbackAddresses() []netip.Prefix {
-	return append(FallbackIPv4(), FallbackIPv6()...)
+// CloudflareAddresses returns a list of both IPv4 and IPv6 prefixes that are used by Cloudflare.
+func CloudflareAddresses() []netip.Prefix {
+	return append(CloudflareIPv4(), CloudflareIPv6()...)
 }

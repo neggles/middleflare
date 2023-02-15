@@ -5,9 +5,10 @@ import (
 	"net/netip"
 )
 
+// CheckSourceAddr checks if the given IP address is in the given list of prefixes.
 func CheckSourceAddr(ip netip.Addr, prefixes ...netip.Prefix) bool {
 	if len(prefixes) == 0 {
-		prefixes = FallbackAddresses()
+		prefixes = CloudflareAddresses()
 	}
 	for _, network := range prefixes {
 		if network.Contains(ip) {
@@ -17,6 +18,7 @@ func CheckSourceAddr(ip netip.Addr, prefixes ...netip.Prefix) bool {
 	return false
 }
 
+// ParsePrefixes parses a list of CIDR strings into a list of netip.Prefix.
 func ParsePrefixes(cidrs []string) []netip.Prefix {
 	prefixes := make([]netip.Prefix, len(cidrs))
 	for i, cidr := range cidrs {
@@ -26,5 +28,5 @@ func ParsePrefixes(cidrs []string) []netip.Prefix {
 		}
 		prefixes[i] = prefix
 	}
-	return prefixes[:]
+	return prefixes
 }

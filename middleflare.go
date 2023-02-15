@@ -1,4 +1,4 @@
-package middleflare
+package middleflare // import "github.com/neggles/middleflare"
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/neggles/middleflare/cfaddrs"
 )
 
-const (
+const ( // Header names.
 	XRealIP         = "X-Real-IP"
 	XForwardedFor   = "X-Forwarded-For"
 	XForwardedProto = "X-Forwarded-Proto"
@@ -25,6 +25,7 @@ type Config struct {
 	IncludeDefault bool     `json:"includeDefault,omitempty"`
 }
 
+// CheckResult is the return from an IP trust check.
 type CheckResult struct {
 	IsValid   bool
 	IsTrusted bool
@@ -39,9 +40,6 @@ func CreateConfig() *Config {
 	}
 }
 
-type CloudflareHeaders struct {
-}
-
 // CFHeaderWriter is a plugin that maps CF-Connecting-IP to X-Real-IP and X-Forwarded-For.
 type CFHeaderWriter struct {
 	next          http.Handler
@@ -49,7 +47,7 @@ type CFHeaderWriter struct {
 	trustPrefixes []netip.Prefix
 }
 
-// New created a new CFHeaderWriter plugin.
+// New creates a new CFHeaderWriter plugin.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	if config == nil {
 		config = CreateConfig()
@@ -59,7 +57,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 	// If IncludeDefault is true, then we add the default fallback addresses.
 	if config.IncludeDefault {
-		trustPrefixes = cfaddrs.FallbackAddresses()
+		trustPrefixes = cfaddrs.CloudflareAddresses()
 	}
 
 	// If TrustedProxies is not empty, then we add the user defined addresses.
@@ -75,6 +73,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}, nil
 }
 
+// ServeHTTP implements the http.Handler interface.
 func (writer *CFHeaderWriter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Check if the request is coming from a trusted proxy.
 	checkResult := writer.checkSourceAddr(req.RemoteAddr)
@@ -103,6 +102,7 @@ func (writer *CFHeaderWriter) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 	writer.next.ServeHTTP(rw, req)
 }
 
+// checkSourceAddr checks if the remote address is trusted.
 func (writer *CFHeaderWriter) checkSourceAddr(remoteAddr string) *CheckResult {
 	// Split the remote address into the IP and port, and then take the IP.
 	strIP := strings.Split(remoteAddr, ":")[0]
